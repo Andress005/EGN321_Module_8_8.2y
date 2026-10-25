@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tank Volume Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 0 20px;
+            line-height: 1.5;
+        }
+
+        label {
+            display: block;
+            margin-top: 14px;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            font-size: 1rem;
+        }
+
+        button {
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .result, .error, .notice {
+            padding: 12px;
+            margin-top: 20px;
+            border: 1px solid #aaa;
+            border-radius: 6px;
+        }
+
+        .error {
+            border-color: #b00020;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tank Volume Calculator</h1>
+    <p>Calculate the volume of a rectangular tank in US gallons.</p>
+
+    <form method="post">
+        <label for="length_ft">Length (feet)</label>
+        <input id="length_ft" name="length_ft" type="number"
+               step="any" min="0" required
+               value="{{ values.length_ft }}">
+
+        <label for="width_ft">Width (feet)</label>
+        <input id="width_ft" name="width_ft" type="number"
+               step="any" min="0" required
+               value="{{ values.width_ft }}">
+
+        <label for="depth">Depth</label>
+        <input id="depth" name="depth" type="number"
+               step="any" min="0" required
+               value="{{ values.depth }}">
+
+        <label for="depth_unit">Depth unit</label>
+        <select id="depth_unit" name="depth_unit">
+            <option value="in"
+                {% if values.depth_unit == "in" %}selected{% endif %}>
+                Inches
+            </option>
+            <option value="ft"
+                {% if values.depth_unit == "ft" %}selected{% endif %}>
+                Feet
+            </option>
+        </select>
+
+        <button type="submit">Calculate Volume</button>
+    </form>
+
+    {% if result is not none %}
+    <section class="result" aria-live="polite">
+        <h2>Calculated Volume</h2>
+        <p><strong>{{ "%.2f"|format(result) }} US gallons</strong></p>
+    </section>
+    {% endif %}
+
+    {% if error %}
+    <section class="error" role="alert">
+        <strong>Unable to calculate:</strong> {{ error }}
+    </section>
+    {% endif %}
+
+    <section class="notice">
+        <strong>Calculation note:</strong>
+        Volume is calculated using length × width × depth in cubic feet,
+        multiplied by 7.48052 US gallons per cubic foot.
+        Select the correct depth unit. The original workbook's R-108
+        depth has a unit discrepancy that must be verified separately.
+    </section>
+
+    <p><a href="/">Return to sensor dashboard</a></p>
+</body>
+</html>

@@ -1,7 +1,9 @@
 
 from datetime import datetime, timezone
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request
+
+from tank_volume import calculate_volume_gallons
 
 from monitor import (
     DB_PATH,
@@ -92,3 +94,41 @@ def health():
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
+
+
+@app.route("/tank-volume", methods=["GET", "POST"])
+def tank_volume():
+    result = None
+    error = None
+
+    values = {
+        "length_ft": "",
+        "width_ft": "",
+        "depth": "",
+        "depth_unit": "in",
+    }
+
+    if request.method == "POST":
+        values = {
+            "length_ft": request.form.get("length_ft", "").strip(),
+            "width_ft": request.form.get("width_ft", "").strip(),
+            "depth": request.form.get("depth", "").strip(),
+            "depth_unit": request.form.get("depth_unit", "in"),
+        }
+
+        try:
+            result = calculate_volume_gallons(
+                values["length_ft"],
+                values["width_ft"],
+                values["depth"],
+                values["depth_unit"],
+            )
+        except ValueError as exc:
+            error = str(exc)
+
+    return render_template(
+        "tank_volume.html",
+        result=result,
+        error=error,
+        values=values,
+    )
