@@ -1,31 +1,54 @@
+# EGN321 Module 8.2 — AI Usage and Verification Log
 
-## Assignment 7.2 — Failure Investigation and Recovery Report
+## AI assistance
 
-### AI assistance
+ChatGPT was used to help organize the capstone work, review the legacy tank-fill workbook, plan the tank-volume calculation, implement input validation, integrate the calculator into the Flask application, and update project documentation.
 
-ChatGPT was used to help organize the failure investigation report, identify the assignment requirements, improve documentation, and plan verification steps. AI-generated suggestions were reviewed against the existing code and logs.
+AI-generated suggestions were applied and checked through local commands and automated tests. The original workbook was preserved rather than edited.
 
-### Failure scenario
+## Work completed
 
-The selected scenario was unexpected termination of the sensor worker. Existing evidence in `evidence/recovery_test.txt` and `logs/supervisor.log` documents a worker exit with code `-9` and subsequent restart activity.
+- Set up the capstone repository using the existing sensor-monitoring project as the baseline.
+- Reviewed the legacy workbook and documented the R-108 depth-unit discrepancy and the apparent total-formula range issue in `evidence/workbook_audit.md`.
+- Preserved the original workbook at `original/TANK_FILL_rev4.xlsx`.
+- Added `tank_volume.py` to calculate rectangular tank volume in US gallons, with explicit depth units and input validation.
+- Added `test_tank_volume.py` for calculation and validation tests.
+- Added the Flask `/tank-volume` route and `templates/tank_volume.html`.
+- Updated `README.md` to document the capstone features, setup, execution, testing, and known limitations.
 
-### Verification
+## Verification performed
 
-The project's automated tests were run using:
+The automated test suite was run with:
 
 ```bash
 python -m pytest -q
 ```
 
-Latest verified result: **[replace with the actual output from the final test run]**.
+Verified result during calculator development:
 
-### Limitations
+**21 passed in 0.26s**
 
-The worker exit code does not establish the original cause of termination. The report distinguishes observed evidence from possible explanations. Any additional tests and logging changes are documented only after they have been implemented and verified.
+The Flask test client was also used to verify:
+- `GET /tank-volume` returned HTTP 200.
+- A calculation using length 10 ft, width 5 ft, and depth 12 in returned the expected 374.03 US gallons.
+- Invalid negative dimensions displayed a validation error.
 
-### Changes made
+The 21-test result includes the existing monitoring tests and the new tank-volume tests.
 
-- Added or updated `failure_report.md`.
-- Updated the README with the failure scenario and evidence locations.
-- [Describe the actual logging improvement, if implemented.]
-- [List the additional tests and their actual results.]
+## Existing monitoring and recovery evidence
+
+The project contains earlier sensor-worker recovery evidence in `evidence/recovery_test.txt` and `logs/supervisor.log`. That evidence documents prior worker termination and restart activity.
+
+The current capstone changes did not independently repeat every sensor recovery scenario. Earlier recovery records are retained as existing evidence and should not be interpreted as a new recovery test performed during the tank-calculator work.
+
+## Known limitations
+
+- The sensor input is simulated from CSV data rather than a physical sensor.
+- The tank calculator supports rectangular tank dimensions only.
+- The correct unit for the R-108 depth must be verified against the original source before operational use.
+- The apparent workbook total-formula range issue requires review before relying on the workbook total.
+- A worker exit code alone does not establish the original cause of termination.
+
+## Final verification record
+
+The test result above was observed during development. Rerun the test suite before final submission and update this log if the final result differs.

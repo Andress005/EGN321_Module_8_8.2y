@@ -1,14 +1,50 @@
-# EGN321 Module 7.1 — Unattended Sensor Monitoring System
+# EGN321 Module 8.2 — Sensor Monitoring and Tank Volume Capstone
 
 ## Project Overview
 
-This project implements a virtual temperature sensor monitoring system using Python, Flask, and SQLite. It monitors replayed sensor data, records readings, detects stale input, generates temperature alerts, and provides a web dashboard for system health and history.
+This project combines a virtual temperature sensor monitoring system with a rectangular tank volume calculator. It uses Python, Flask, and SQLite to process sensor readings, monitor system health, record alerts, and provide web-based tools.
 
-## System Architecture
+The project also preserves and audits the original tank-fill workbook. Potential data and formula issues are documented rather than silently corrected.
 
-Virtual sensor CSV replay → Reading validation and processing → SQLite history → Threshold alert logic → Flask dashboard and application logs.
+## Main Features
 
-A Python supervisor monitors the sensor worker and restarts it if the worker exits unexpectedly.
+### Sensor Monitoring
+
+- Replays virtual sensor readings from a CSV file.
+- Stores readings and monitoring state in SQLite.
+- Displays recent readings, historical data, alerts, and health information.
+- Detects stale sensor input.
+- Activates and clears high-temperature alerts.
+- Uses a supervisor to restart the sensor worker after unexpected exits.
+- Provides a JSON health endpoint at `/health`.
+
+### Tank Volume Calculator
+
+The Flask page at `/tank-volume` calculates rectangular tank volume in US gallons.
+
+Inputs:
+- Length in feet
+- Width in feet
+- Depth
+- Explicit depth unit: inches or feet
+
+The calculation uses:
+
+`Volume (gallons) = length (ft) × width (ft) × depth (ft) × 7.48052`
+
+When depth is entered in inches, it is converted to feet by dividing by 12.
+
+The calculator validates dimensions and requires an explicitly supported depth unit. Invalid input produces an error rather than a volume result.
+
+### Workbook Audit
+
+The original workbook is preserved at `original/TANK_FILL_rev4.xlsx`. Audit findings are documented in `evidence/workbook_audit.md`.
+
+The audit identified an unresolved unit discrepancy for R-108:
+- The `Tank Fill` sheet records a depth of `2.5` under a column labeled in inches.
+- The `Field Notes` sheet records `2.5 ft`.
+
+The correct unit must be verified before using that value for operational calculations. The workbook's total formula also appears to include R-101 through R-112 while omitting R-113 through R-118. The original workbook has not been modified.
 
 ## Requirements
 
@@ -18,7 +54,7 @@ A Python supervisor monitors the sensor worker and restarts it if the worker exi
 - matplotlib
 - pytest
 
-Install dependencies in the project virtual environment:
+Install dependencies in the project's virtual environment:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -26,15 +62,25 @@ python -m pip install -r requirements.txt
 
 ## How to Run
 
-Open two terminals in the project directory and activate the virtual environment in each.
+Activate the project's virtual environment and open two terminals in the project directory.
 
-**Terminal 1 — Dashboard**
+**Terminal 1 — Web application**
 
 ```bash
 python -u app.py
 ```
 
-Open http://127.0.0.1:5000 in your browser.
+Open the sensor dashboard at:
+
+http://127.0.0.1:5000/
+
+Open the tank calculator at:
+
+http://127.0.0.1:5000/tank-volume
+
+Check the health endpoint at:
+
+http://127.0.0.1:5000/health
 
 **Terminal 2 — Sensor worker and recovery supervisor**
 
@@ -42,126 +88,71 @@ Open http://127.0.0.1:5000 in your browser.
 python -u supervisor.py
 ```
 
-The supervisor launches `run_monitor.py`, which continuously replays the virtual sensor CSV and records readings in SQLite.
+The supervisor launches `run_monitor.py`, which replays virtual sensor data and records readings in SQLite.
 
 Stop the supervisor with `Control + C` when finished.
 
-## Data Storage
+## Data and Project Files
 
 - `data/sensor_readings.csv` — virtual sensor input
-- `sensor_history.db` — persistent SQLite database
-- `history_builder.py` — historical data and reporting utilities
-- `logs/application.log` — application events, readings, and alert events
-- `logs/supervisor.log` — worker startup, termination, and recovery events
+- `sensor_history.db` — SQLite monitoring database
+- `monitor.py` — monitoring, database, health, and alert logic
+- `history_builder.py` — historical data utilities
+- `run_monitor.py` — sensor worker entry point
+- `supervisor.py` — worker monitoring and restart logic
+- `app.py` — Flask dashboard, health endpoint, and tank calculator route
+- `tank_volume.py` — validated tank volume calculation
+- `templates/dashboard.html` — sensor dashboard
+- `templates/tank_volume.html` — tank calculator page
+- `original/TANK_FILL_rev4.xlsx` — preserved source workbook
+- `evidence/workbook_audit.md` — workbook audit findings
+- `logs/application.log` — monitoring and application events
+- `logs/supervisor.log` — worker lifecycle and recovery events
+- `AI_LOG.md` — AI assistance and verification record
 
-The monitoring worker appends readings to the existing database rather than replacing the historical records.
-
-## Sampling and Stale-Data Detection
+## Monitoring Behavior
 
 The virtual sensor replay uses a sampling interval of 2 seconds. Input is considered stale when the most recent received reading is more than 8 seconds old.
 
-Stale input is marked as degraded, and stale values should not be presented as current readings. Missing or rejected input should not be silently represented as a valid measurement.
-
-## Temperature Alert Logic
-
-- High-temperature threshold: 28.0°C
+High-temperature alert settings:
+- Activation threshold: 28.0°C
 - Activation: 3 consecutive accepted readings at or above the threshold
-- Clearing: an accepted reading below 27.0°C
-- Hysteresis: the different activation and clearing thresholds reduce repeated alert changes near the threshold
+- Clearing threshold: below 27.0°C
 
-Alert activation and clearing events are recorded in the application log and stored in the SQLite `alerts` table.
+The different activation and clearing thresholds provide hysteresis to reduce repeated alert changes near the threshold.
 
-## Health States
-
-- **HEALTHY:** recent input is being processed normally.
-- **DEGRADED:** input is stale or unavailable.
-- **FAILED:** a fatal monitoring failure has occurred; inspect the logs to diagnose the issue.
-- **RECOVERING:** the supervisor is restarting the sensor worker after it exits.
-
-The dashboard exposes a health endpoint at `/health`.
-
-## Automatic Worker Recovery
-
-Run `supervisor.py` to keep the virtual sensor worker under supervision. If the worker exits unexpectedly, the supervisor records the exit code, waits 3 seconds, and starts the worker again.
-
-This recovery mechanism operates while the supervisor itself is running. Automatic startup after a computer reboot or login is not configured by this Python supervisor alone.
-
+Health states and recovery behavior should be verified against the current health response, database records, and logs. A single successful health check does not prove every failure scenario has been tested.
 
 ## Testing
 
-Run the automated tests from the project directory:
+Run the automated test suite from the project directory:
 
 ```bash
 python -m pytest -q
 ```
 
-The current test suite passes 7 tests. The tests cover existing history and alert behavior, along with supervisor failure logging for worker exit codes -9, 1, and 0.
+The current test suite has passed 21 tests. Coverage includes the existing monitoring, history, alert, and supervisor behavior, plus tank volume calculations and validation.
 
-The supervisor logging improvement records the worker PID, exit code, and restart delay when a worker stops. This information helps distinguish which process stopped and what recovery action was scheduled.
+The Flask tank calculator route was also checked for:
+- Successful page loading
+- A valid volume calculation
+- Rejection of invalid dimensions
 
-Existing recovery evidence in `evidence/recovery_test.txt` documents a worker being forcibly terminated, the supervisor detecting exit code -9, and a replacement worker being launched. This existing record is separate from the automated logging tests.
+Rerun the tests after future changes and use the actual output when recording results.
 
-After recovery, verify the dashboard, `/health` endpoint, SQLite history, and alert behavior. A passing logging test alone does not establish that every part of the recovery process works.
+## Known Limitations
 
-## Limitations
-
-This is a simulated sensor system that replays CSV data; it is not connected to a physical sensor. Recovery is demonstrated for the sensor worker while the supervisor is running. A production deployment would require an operating-system process manager, additional monitoring, and appropriate service configuration for automatic startup after reboot.
+- Sensor readings are simulated from a CSV file; no physical sensor is connected.
+- The tank calculator handles rectangular tank dimensions only.
+- The R-108 depth unit discrepancy remains unresolved and requires verification.
+- The original workbook's total formula may omit six tank runs.
+- The supervisor restarts the worker while the supervisor itself is running. Operating-system startup after reboot is not configured by this script alone.
+- Production use would require additional deployment, monitoring, and operational validation.
 
 ## Evidence
 
-The `evidence/` directory should contain screenshots or test records demonstrating:
-
-- Dashboard and latest reading
-- Historical readings and health state
-- Alert activation and clearing
-- Stale-input detection
-- Application logs
-- Worker interruption and supervisor recovery
-- Final healthy state
+The `evidence/` directory contains records and screenshots from prior monitoring and recovery work, along with the workbook audit. Review each evidence file to confirm what it demonstrates and whether it reflects the current capstone state.
 
 ## AI Usage Disclosure
 
-See `AI_LOG.md` for a record of AI assistance and local verification.
-
-
-## Assignment 7.2: Failure Investigation and Recovery
-
-### Failure scenario
-
-The investigation uses unexpected termination of the sensor worker while the supervisor is running. The supervisor is responsible for detecting the worker exit and attempting to restart it.
-
-### Evidence files
-
-- `failure_report.md` — the 13-section failure investigation and recovery report.
-- `logs/supervisor.log` — supervisor startup, worker lifecycle, and restart events.
-- `logs/application.log` — application and sensor-monitoring events.
-- `evidence/recovery_test.txt` — existing worker-termination and recovery evidence.
-- `evidence/` — screenshots and additional verification output.
-
-### Run automated tests
-
-Activate the project's virtual environment and run:
-
-```bash
-python -m pytest -q
-```
-
-Record the actual test result in the report and AI log.
-
-### Check system health
-
-When the Flask application is running on port 5050, use:
-
-```bash
-curl -i http://127.0.0.1:5050/health
-```
-
-The health response should be inspected for the health state, latest reading, and stale-data flag. A healthy response at one point in time does not by itself prove that every failure-recovery scenario has been tested.
-
-### Recovery design
-
-The supervisor monitors the sensor worker and attempts to restart it when it exits. SQLite history and logs are retained to support investigation rather than being deleted to hide the failure.
-
-### Known limitations
-
-A worker exit code does not necessarily identify the underlying cause. Recovery should be verified using sensor readings, database access, dashboard availability, alert behavior, and system health.
+See `AI_LOG.md` for documentation of AI assistance and local verification.
