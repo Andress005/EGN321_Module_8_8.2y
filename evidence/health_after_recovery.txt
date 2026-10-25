@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.12.0
+Date: Sun, 18 Oct 2026 18:38:13 GMT
+Content-Type: application/json
+Content-Length: 159
+Connection: close
+
+{"health":"HEALTHY","latest_reading":{"accepted_value":24.78,"sample_number":1928,"status":"OK","timestamp":"2026-10-18T18:38:12.971686+00:00"},"stale":false}

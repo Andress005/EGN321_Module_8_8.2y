@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="5">
+    <title>Sensor Monitoring Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1100px;
+            margin: 35px auto;
+            padding: 0 18px;
+            background: #f4f6f8;
+            color: #20252b;
+        }
+        h1, h2 { margin-bottom: 12px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: deepskyblue;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #00000012;
+            margin-bottom: 18px;
+            overflow-wrap: anywhere;
+        }
+        .value { font-size: 28px; font-weight: bold; }
+        .healthy { color: #187847; }
+        .degraded, .failed { color: #b42318; }
+        .recovering { color: #9a6700; }
+        .stale { color: #b42318; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table-wrap { overflow-x: auto; }
+        small { color: #5b6470; }
+    </style>
+</head>
+<body>
+    <h1>Unattended Sensor Monitoring</h1>
+    <p>Database: {{ database }} | Auto-refresh: every 5 seconds</p>
+
+    <div class="grid">
+        <section class="card">
+            <h2>Latest accepted temperature</h2>
+            {% if latest and latest.accepted_value is not none and not is_stale %}
+                <div class="value">{{ "%.2f"|format(latest.accepted_value) }} °C</div>
+                <p>Sample {{ latest.sample_number }}</p>
+            {% else %}
+                <div class="value">Unavailable</div>
+                <p>Data is missing or stale; not presented as current.</p>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2>System health</h2>
+            <div class="value {{ health|lower }}">{{ health }}</div>
+            {% if is_stale %}
+                <p class="stale">Input is stale or has not been received.</p>
+            {% else %}
+                <p>Latest input age: {{ "%.1f"|format(age_seconds) }} seconds</p>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2>Latest database record</h2>
+            {% if latest %}
+                <p>Sample {{ latest.sample_number }}</p>
+                <p>Recorded at: {{ latest.timestamp }}</p>
+                <p>Reading status: {{ latest.status }}</p>
+            {% else %}
+                <p>No readings recorded.</p>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2>High-temperature alert</h2>
+            <div class="value">{{ threshold }} °C</div>
+            <p>Requires 3 consecutive high readings.</p>
+            <p>Alert clearing threshold: 27.0 °C</p>
+            {% if alerts and alerts[0].status == "ACTIVE" %}
+                <p class="stale">ALERT ACTIVE — peak {{ alerts[0].peak_value_c }} °C</p>
+            {% else %}
+                <p>No active high-temperature alert.</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <section class="card">
+        <h2>Recent sensor history</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Sample</th>
+                        <th>Accepted value (°C)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reading in history %}
+                    <tr>
+                        <td>{{ reading.timestamp }}</td>
+                        <td>{{ reading.sample_number }}</td>
+                        <td>
+                            {% if reading.accepted_value is not none %}
+                                {{ "%.2f"|format(reading.accepted_value) }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ reading.status }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No history available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Recent alert history</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Activated at (UTC)</th>
+                        <th>Cleared at (UTC)</th>
+                        <th>Peak (°C)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alert in alerts %}
+                    <tr>
+                        <td>{{ alert.activated_at }}</td>
+                        <td>{{ alert.cleared_at or "—" }}</td>
+                        <td>{{ "%.2f"|format(alert.peak_value_c) }}</td>
+                        <td>{{ alert.status }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No alerts recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <p><small>This is a local classroom simulation, not a production safety-monitoring system.</small></p>
+</body>
+</html>

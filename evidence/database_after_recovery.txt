@@ -1,0 +1,12 @@
+EGN321 Module 7.2 — Database Verification After Recovery
+Date: 2026-10-18
+
+Result:
+- SQLite database opened successfully.
+- Tables present: alerts, monitor_state, readings, sqlite_sequence.
+- Readings table: 1936 rows.
+- Monitor state table: 3 rows.
+- Alerts table: 0 rows at the time of inspection.
+
+Interpretation:
+The SQLite database remains accessible and historical readings are retained after worker recovery. No alert records were present during this inspection.

@@ -1,0 +1,10 @@
+EGN321 Module 7.2 — Worker Recovery Test
+Date: 2026-10-18
+Failure: Sensor worker forcibly terminated with SIGKILL
+
+2026-10-18 14:18:16,906 INFO Supervisor started
+2026-10-18 14:18:16,906 INFO Starting virtual sensor worker
+2026-10-18 14:18:16,908 INFO Worker started with PID 5110
+2026-10-18 14:37:05,607 WARNING Worker stopped with exit code -9; restarting in 3 seconds
+2026-10-18 14:37:08,610 INFO Starting virtual sensor worker
+2026-10-18 14:37:08,617 INFO Worker started with PID 5595

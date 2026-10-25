@@ -1,0 +1,17 @@
+EGN321 Module 7.1 — Worker Recovery Test
+Date: 2026-10-15
+
+Test procedure:
+1. Started supervisor.py.
+2. Terminated the sensor worker with kill -9.
+3. Confirmed the supervisor detected exit code -9.
+4. Confirmed the supervisor launched a replacement worker.
+5. Confirmed the dashboard and SQLite history remained usable.
+
+Supervisor log:
+2026-10-15 17:24:55,948 INFO Supervisor started
+2026-10-15 17:24:55,948 INFO Starting virtual sensor worker
+2026-10-15 17:24:55,950 INFO Worker started with PID 68927
+2026-10-15 17:26:50,310 WARNING Worker stopped with exit code -9; restarting in 3 seconds
+2026-10-15 17:26:53,318 INFO Starting virtual sensor worker
+2026-10-15 17:26:53,325 INFO Worker started with PID 68977
